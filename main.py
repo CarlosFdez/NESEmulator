@@ -7,34 +7,34 @@ import struct
 # is little endian, therefore $1234 is stored as [$34] and then [$12]
 #
 # The NES hardware uses memory mapped IO, which is laid out as follows:
-# 0000 - 07FF 	RAM (First 256 bytes is zero page)
-# 0800 - 0FFF	RAM Mirror #1
-# 1000 - 17FF	RAM Mirror #2
-# 1800 - 1FFF	RAM mirror #3
-# 2000 - 2007	I/O Registers 
-# 2008 - 3FFF	Continous Mirrors of previous registers
-# 4000 - 401F	I/O Registers (new ones)
-# 4020 - 5FFF	Expansion ROM (apparently extra memory for MMC5)
-# 6000 - 7FFF	SRAM (Save RAM)
-# 8000 - BFFF	PRG-ROM (Program ROM)
-# C000 - FFFF	PRG-ROM (Program ROM)
+# 0000 - 07FF    RAM (First 256 bytes is zero page)
+# 0800 - 0FFF    RAM Mirror #1
+# 1000 - 17FF    RAM Mirror #2
+# 1800 - 1FFF    RAM mirror #3
+# 2000 - 2007    I/O Registers 
+# 2008 - 3FFF    Continous Mirrors of previous registers
+# 4000 - 401F    I/O Registers (new ones)
+# 4020 - 5FFF    Expansion ROM (apparently extra memory for MMC5)
+# 6000 - 7FFF    SRAM (Save RAM)
+# 8000 - BFFF    PRG-ROM (Program ROM)
+# C000 - FFFF    PRG-ROM (Program ROM)
 class MemoryController(object):
-	def __init__(self, rom=None):
-		self.mem_location = 0 # TODO: Is there a default?
+    def __init__(self, rom = None):
+        self.mem_location = 0 # TODO: Is there a default?
         self._rom = rom
-		
-	# Sets the file pointer location
-	def set_pointer_to(self, location):
-		self.mem_location = location
+        
+    # Sets the file pointer location
+    def set_pointer_to(self, location):
+        self.mem_location = location
     
-	# Reads a byte from memory. The memory is obtained from the 
-	# pointer location
-	def read(self):
-		pass #IMPLEMENT
-		
-	def write(self, value):
-		pass #IMPLEMENT
-		
+    # Reads a byte from memory. The memory is obtained from the 
+    # pointer location
+    def read(self):
+        pass #IMPLEMENT
+        
+    def write(self, value):
+        pass #IMPLEMENT
+        
 # LOADER INFORMATION - Something about how the PRG-ROM banks are treated, and
 # which bank to load in memory
 
@@ -46,8 +46,8 @@ class MemoryController(object):
 # PS: How is it actually laid out? I assume the pointer starts at 0 and points
 # to the topmost item
 class Stack(object):
-	def __init__(self, memory_controller):
-		self.memory = memory_controller
+    def __init__(self, memory_controller):
+        self.memory = memory_controller
 
 # Represents a special purpose register used internally by the processor
 # Internally, the data is laid out as follows:
