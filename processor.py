@@ -28,11 +28,26 @@ def instruction(opcode, mnemonic, addressing='Implied'):
             return func(*args, **kwargs)
             
         wrapped_instruction._instruction_info = {
+            'opcode': opcode,
             'mnemonic': mnemonic,
             'mode': addressing
         }
         return wrapped_instruction
     return wrapped
+
+# The set of all instructions the processor can perform
+class InstructionSet(object):
+    def __init__(self, instruction_list):
+        self._instructions = instruction_list
+        self._opcode_hash = {}
+        for instr in instruction_list:
+            self._opcode_hash[instr['opcode']] = instr
+        
+    def find_by_opcode(self, opcode):
+        return self._opcode_hash[opcode]
+        
+    def __str__(self):
+        return self._instructions.__str__()
 
 # NTSC uses the Ricoh 2A03 (RP2A03) and PAL uses the Ricoh 2A07 (RP2A07)
 # They are based off the MOS 6502, but lack binary-coded decimal mode.
@@ -41,10 +56,11 @@ def instruction(opcode, mnemonic, addressing='Implied'):
 # http://nesdev.parodius.com/6502guid.txt
 class Processor(object):
     def __init__(self):
-        self._instructions = []
+        instructions = []
         for func in self.__class__.__dict__.values():
             if callable(func) and hasattr(func, '_instruction_info'):
-                self._instructions.append(func._instruction_info)
+                instructions.append(func._instruction_info)
+        self._instructions = InstructionSet(instructions)
     
     @instruction(0x4E, 'sei')
     def sei(self):

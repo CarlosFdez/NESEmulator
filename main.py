@@ -109,4 +109,3 @@ class Emulator(object):
         
     def start_emulation(self):
         self.memory_controller = MemoryController(rom=self._rom)
-        pass
