@@ -1,5 +1,6 @@
 import io
 import struct
+import processor
 
 # http://nesdev.parodius.com/NESDoc.pdf
 
@@ -48,36 +49,6 @@ class MemoryController(object):
 class Stack(object):
     def __init__(self, memory_controller):
         self.memory = memory_controller
-
-# Represents a special purpose register used internally by the processor
-# Internally, the data is laid out as follows:
-# (high) N | V | 1 | B | D | I | Z | C (low)
-#   C - Carry
-#   Z - Zero
-#   I - IRQ Disable
-#   D - Binary Decimal Mode. Its value is ignored by the NES
-#   B - Brk command
-#   V - overflow. If adding two positives creates a negative or vice versa, 
-#       this flag will be set
-#   N - negative
-class ProcessorStatus(object):
-    def __init__(self):
-        self.carry = 0
-        self.zero = 0
-        self.irq_disable = 0
-        self.decimal_mode = 0 # ignored
-        self.brk_command = 0
-        self.overflow = 0
-        self.negative = 0
-        
-# NTSC uses the Ricoh 2A03 (RP2A03) and PAL uses the Ricoh 2A07 (RP2A07)
-# They are based off the MOS 6502, but lack binary-coded decimal mode.
-# It also adds 22 memory mapped IO registers as well
-#
-# http://nesdev.parodius.com/6502guid.txt
-class Processor(object):
-    def __init__(self):
-        pass
 
 # A class to simplify file io internally. This should be replaced for a valid
 # module
