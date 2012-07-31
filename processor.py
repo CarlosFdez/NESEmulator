@@ -23,6 +23,8 @@ class ProcessorStatus(object):
         self.overflow = 0
         self.negative = 0
 
+# A decorator to ease implementation of processor instructions
+# TODO: Allow stacking of decorators
 def instruction(opcode, mnemonic, addressing='implied'):
     def wrapped(func):
         @functools.wraps(func)
@@ -33,21 +35,30 @@ def instruction(opcode, mnemonic, addressing='implied'):
             opcode = opcode,
             mnemonic = mnemonic,
             mode = addressing,
-            callback = func
+            callback = func,
+            description = func.__doc__
         )
         return wrapped_instruction
     return wrapped
 
 class Instruction(object):
-    def __init__(self, opcode, mnemonic, mode, callback):
+    def __init__(self, opcode, mnemonic, mode, description, callback):
         self.opcode = opcode
         self.mnemonic = mnemonic
         self.mode = mode
+        self.description = description
         self.callback = callback
         
     def execute(self, arguments):
         # todo: check if this calls the function on the processor class
         self.callback(*arguments)
+        
+    def __str__(self):
+        opcode = self.opcode
+        mnemonic = self.mnemonic
+        mode = self.mode
+        description = self.description
+        return '%02x %s %-07s %s' % (opcode, mnemonic, mode, description)
 
 # The set of all instructions the processor can perform
 class InstructionSet(object):
@@ -61,7 +72,8 @@ class InstructionSet(object):
         return self._opcode_hash[opcode]
         
     def __str__(self):
-        return self._instructions.__str__()
+        str_list = map(lambda x: str(x), self._instructions)
+        return '\n'.join(str_list)
 
 # NTSC uses the Ricoh 2A03 (RP2A03) and PAL uses the Ricoh 2A07 (RP2A07)
 # They are based off the MOS 6502, but lack binary-coded decimal mode.
