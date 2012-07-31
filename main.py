@@ -21,18 +21,32 @@ import processor
 # C000 - FFFF    PRG-ROM (Program ROM)
 class MemoryController(object):
     def __init__(self, rom = None):
-        self.mem_location = 0 # TODO: Is there a default?
         self._rom = rom
         
     # Sets the file pointer location
     def set_pointer_to(self, location):
         self.mem_location = location
     
-    # Reads a byte from memory. The memory is obtained from the 
-    # pointer location
-    def read(self):
-        pass #IMPLEMENT
+    # Where to start program execution
+    def rom_start(self):
+        return 0x8000
         
+    # Reads an unsigned byte from memory. The memory is obtained from the 
+    # pointer location
+    def read(self, location):
+        if location < 0x8000:
+            print 'WARNING: NOT SUPPORTED'
+        else:
+            rom_location = location - 0x8000
+            return self._rom.prg_rom[rom_location]
+    
+    # Reads an unsigned word from memory
+    # Note: The implementation is fairly dumb
+    def read_word(self, location):
+        low = self.read(location)
+        high = self.read(location + 1)
+        return (high << 8) + low
+            
     def write(self, value):
         pass #IMPLEMENT
         
@@ -109,3 +123,5 @@ class Emulator(object):
         
     def start_emulation(self):
         self.memory_controller = MemoryController(rom=self._rom)
+        
+

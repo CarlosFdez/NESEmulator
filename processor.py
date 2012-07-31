@@ -1,5 +1,7 @@
 import functools
 
+import main
+
 # Represents a special purpose register used internally by the processor
 # Internally, the data is laid out as follows:
 # (high) N | V | 1 | B | D | I | Z | C (low)
@@ -21,19 +23,31 @@ class ProcessorStatus(object):
         self.overflow = 0
         self.negative = 0
 
-def instruction(opcode, mnemonic, addressing='Implied'):
+def instruction(opcode, mnemonic, addressing='implied'):
     def wrapped(func):
         @functools.wraps(func)
         def wrapped_instruction(*args, **kwargs):
             return func(*args, **kwargs)
             
-        wrapped_instruction._instruction_info = {
-            'opcode': opcode,
-            'mnemonic': mnemonic,
-            'mode': addressing
-        }
+        wrapped_instruction._instruction_info = Instruction(
+            opcode = opcode,
+            mnemonic = mnemonic,
+            mode = addressing,
+            callback = func
+        )
         return wrapped_instruction
     return wrapped
+
+class Instruction(object):
+    def __init__(self, opcode, mnemonic, mode, callback):
+        self.opcode = opcode
+        self.mnemonic = mnemonic
+        self.mode = mode
+        self.callback = callback
+        
+    def execute(self, arguments):
+        # todo: check if this calls the function on the processor class
+        self.callback(*arguments)
 
 # The set of all instructions the processor can perform
 class InstructionSet(object):
@@ -41,7 +55,7 @@ class InstructionSet(object):
         self._instructions = instruction_list
         self._opcode_hash = {}
         for instr in instruction_list:
-            self._opcode_hash[instr['opcode']] = instr
+            self._opcode_hash[instr.opcode] = instr
         
     def find_by_opcode(self, opcode):
         return self._opcode_hash[opcode]
@@ -51,37 +65,76 @@ class InstructionSet(object):
 
 # NTSC uses the Ricoh 2A03 (RP2A03) and PAL uses the Ricoh 2A07 (RP2A07)
 # They are based off the MOS 6502, but lack binary-coded decimal mode.
-# It also adds 22 memory mapped IO registers as well
+# It also adds 22 memory mapped IO registers as well.
 #
 # http://nesdev.parodius.com/6502guid.txt
 class Processor(object):
-    def __init__(self):
+    def __init__(self, memory):
         instructions = []
         for func in self.__class__.__dict__.values():
             if callable(func) and hasattr(func, '_instruction_info'):
                 instructions.append(func._instruction_info)
-        self._instructions = InstructionSet(instructions)
+        self.instructions = InstructionSet(instructions)
+        self.memory = memory
+        
+        # registers
+        self.program_counter = self.memory.rom_start()
+        self.x = 0
+        self.y = 0
+        self.accumulator = 0
     
-    @instruction(0x4E, 'sei')
-    def sei(self):
+    # Executes the next instruction
+    # The current implementation decodes the next instruction but does not
+    # make any attempt to cache that information.
+    # TODO: Finish implementing this
+    def next_instruction_cycle(self):
+        opcode = self.memory.read(self.program_counter)
+        self.program_counter += 1
+        
+        instruction = self.instructions.find_by_opcode(opcode)
+        mode = instruction.mode
+        
+        # Read the next bytes according to the mode
+        # Todo: Allow the instruction to get the arguments itself
+        # Note: data read is unsigned in all modes except relative
+        arguments = []
+        if mode == 'implied':
+            # implied
+            pass
+        elif mode == 'abs':
+            # absolute: cmd $aaaa
+            arguments.append(self.memory.read_word(self.program_counter))
+            self.program_counter += 2
+        elif mode == 'imm':
+            # immediate: cmd #$aa
+            arguments.append(self.memory.read(self.program_counter))
+            self.program_counter += 1
+        else:
+            raise Exception('Addressing mode %s not recognized' % mode)
+        
+        instruction.execute(arguments)
+    
+    @instruction(0x29, 'and', 'imm')
+    def and_29(self, value):
+        'AND memory with accumulator'
         pass
         
-    @instruction(0x8D, 'sta', 'abs')
-    def sta_8d(self, address):
+    @instruction(0x69, 'adc', 'imm')
+    def adc_69(self, value):
+        'Add memory to accumulator with carry'
         pass
     
-    @instruction(0xA2, 'ldx', 'imm')
-    def ldx_a2(self, value):
+    @instruction(0x80, 'sta', 'abs')
+    def sta_80(self, address):
+        'Store accumulator in memory'
         pass
-    
+        
     @instruction(0xA9, 'lda', 'imm')
     def lda_a9(self, value):
-        pass
-        
-    @instruction(0xD8, 'cld')
-    def cld(self):
+        'Load accumulator with memory'
         pass
 
 if __name__ == '__main__':
-    processor = Processor()
-    print processor._instructions
+    memory = main.MemoryController()
+    processor = Processor(memory)
+    print processor.instructions
