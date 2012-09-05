@@ -25,21 +25,26 @@ class ProcessorStatus(object):
 
 # A decorator to ease implementation of processor instructions
 # TODO: Allow stacking of decorators
-def instruction(opcode, mnemonic, addressing='implied'):
-    def wrapped(func):
+class instruction(object):
+    def __init__(self, opcode, mnemonic, addressing='implied'):
+        self.opcode = opcode
+        self.mnemonic = mnemonic
+        self.addressing = addressing
+        
+    def __call__(self, func):
         @functools.wraps(func)
         def wrapped_instruction(*args, **kwargs):
             return func(*args, **kwargs)
             
         wrapped_instruction._instruction_info = Instruction(
-            opcode = opcode,
-            mnemonic = mnemonic,
-            mode = addressing,
+            opcode = self.opcode,
+            mnemonic = self.mnemonic,
+            mode = self.addressing,
             callback = func,
             description = func.__doc__
         )
+        
         return wrapped_instruction
-    return wrapped
 
 class Instruction(object):
     def __init__(self, opcode, mnemonic, mode, description, callback):
