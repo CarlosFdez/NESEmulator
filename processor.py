@@ -87,11 +87,11 @@ class InstructionSet(object):
 # http://nesdev.parodius.com/6502guid.txt
 class Processor(object):
     def __init__(self, memory):
-        instructions = []
+        instructionList = []
         for func in self.__class__.__dict__.values():
             if callable(func) and hasattr(func, '_instruction_info'):
-                instructions.append(func._instruction_info)
-        self.instructions = InstructionSet(instructions)
+                instructionList.append(func._instruction_info)
+        self.instructions = InstructionSet(instructionList)
         self.memory = memory
         
         # registers
@@ -154,4 +154,4 @@ class Processor(object):
 if __name__ == '__main__':
     memory = main.MemoryController()
     processor = Processor(memory)
-    print processor.instructions
+    print(processor.instructions)

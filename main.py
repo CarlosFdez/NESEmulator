@@ -35,7 +35,7 @@ class MemoryController(object):
     # pointer location
     def read(self, location):
         if location < 0x8000:
-            print 'WARNING: NOT SUPPORTED'
+            print('WARNING: NOT SUPPORTED')
         else:
             rom_location = location - 0x8000
             return self._rom.prg_rom[rom_location]
@@ -88,7 +88,7 @@ def read_rom_from_file(filename):
     with io.open(filename, mode='rb') as f:
         f = ByteReader(f)
         if f.read_str(3) != 'NES' or f.next() != 0x1A:
-            print "ERROR: NOT A NES FILE"
+            print('ERROR: NOT A NES FILE')
         num_rom_banks = f.next()
         num_vrom_banks = f.next()
         f.next() # Control byte 1 is ignored for now
