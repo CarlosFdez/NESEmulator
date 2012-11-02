@@ -10,7 +10,7 @@ import main
 #   I - IRQ Disable
 #   D - Binary Decimal Mode. Its value is ignored by the NES
 #   B - Brk command
-#   V - overflow. If adding two positives creates a negative or vice versa, 
+#   V - overflow. If adding two positives creates a negative or vice versa,
 #       this flag will be set
 #   N - negative
 class ProcessorStatus(object):
@@ -30,20 +30,27 @@ class instruction(object):
         self.opcode = opcode
         self.mnemonic = mnemonic
         self.addressing = addressing
-        
+
     def __call__(self, func):
         @functools.wraps(func)
         def wrapped_instruction(*args, **kwargs):
             return func(*args, **kwargs)
-            
-        wrapped_instruction._instruction_info = Instruction(
+
+        if hasattr(func, '_instruction_info'):
+            wrapped_instruction._instruction_info = func._instruction_info
+        else:
+            wrapped_instruction._instruction_info = []
+
+        # TODO: Instead of using func, use the callback from the first instruction info
+        # for efficiency reasons
+        wrapped_instruction._instruction_info.append(Instruction(
             opcode = self.opcode,
             mnemonic = self.mnemonic,
             mode = self.addressing,
             callback = func,
             description = func.__doc__
-        )
-        
+        ))
+
         return wrapped_instruction
 
 class Instruction(object):
@@ -53,11 +60,11 @@ class Instruction(object):
         self.mode = mode
         self.description = description
         self.callback = callback
-        
+
     def execute(self, arguments):
         # todo: check if this calls the function on the processor class
         self.callback(*arguments)
-        
+
     def __str__(self):
         opcode = self.opcode
         mnemonic = self.mnemonic
@@ -72,10 +79,10 @@ class InstructionSet(object):
         self._opcode_hash = {}
         for instr in instruction_list:
             self._opcode_hash[instr.opcode] = instr
-        
+
     def find_by_opcode(self, opcode):
         return self._opcode_hash[opcode]
-        
+
     def __str__(self):
         str_list = map(lambda x: str(x), self._instructions)
         return '\n'.join(str_list)
@@ -90,16 +97,16 @@ class Processor(object):
         instructionList = []
         for func in self.__class__.__dict__.values():
             if callable(func) and hasattr(func, '_instruction_info'):
-                instructionList.append(func._instruction_info)
+                instructionList.extend(func._instruction_info)
         self.instructions = InstructionSet(instructionList)
         self.memory = memory
-        
+
         # registers
         self.program_counter = self.memory.rom_start()
         self.x = 0
         self.y = 0
         self.accumulator = 0
-    
+
     # Executes the next instruction
     # The current implementation decodes the next instruction but does not
     # make any attempt to cache that information.
@@ -107,45 +114,75 @@ class Processor(object):
     def next_instruction_cycle(self):
         opcode = self.memory.read(self.program_counter)
         self.program_counter += 1
-        
+
         instruction = self.instructions.find_by_opcode(opcode)
         mode = instruction.mode
-        
+
         # Read the next bytes according to the mode
         # Todo: Allow the instruction to get the arguments itself
+        # Todo: Chain of if statements is slow. Change this
         # Note: data read is unsigned in all modes except relative
         arguments = []
         if mode == 'implied':
-            # implied
+            # implied - no arguments
             pass
         elif mode == 'abs':
             # absolute: cmd $aaaa
             arguments.append(self.memory.read_word(self.program_counter))
             self.program_counter += 2
+        elif mode == 'absx':
+            # absolute + X register: cmd $aaaa, X
+            addr = self.memory.read_word(self.program_counter)
+            arguments.append(addr + self.x)
+            self.program_counter += 2
+        elif mode == 'absy':
+            # absolute + Y register: cmd $aaaa, Y
+            addr = self.memory.read_word(self.program_counter)
+            arguments.append(addr + self.y)
+            self.program_counter += 2
+        elif mode == 'zp':
+            # zero page: cmd $aa
+            arguments.append(self.memory.read(self.program_counter))
+            self.program_counter += 1
+        elif mode == 'zpx':
+            # zero page + X register: cmd $aa, X
+            addr = self.memory.read(self.program_counter)
+            arguments.append(addr + self.x)
+            self.program_counter += 1
         elif mode == 'imm':
             # immediate: cmd #$aa
             arguments.append(self.memory.read(self.program_counter))
             self.program_counter += 1
         else:
             raise Exception('Addressing mode %s not recognized' % mode)
-        
+
         instruction.execute(arguments)
-    
+
     @instruction(0x29, 'and', 'imm')
     def and_29(self, value):
-        'AND memory with accumulator'
-        pass
-        
+        'And memory with accumulator'
+        self.accumulator &= value
+
+    # Missing some addressing modes
+    @instruction(0x25, 'and', 'zp')
+    @instruction(0x2d, 'and', 'abs')
+    @instruction(0x35, 'and', 'zpx')
+    @instruction(0x3d, 'and', 'absx')
+    @instruction(0x39, 'and', 'absy')
+    def and_addr(self, address):
+        'And memory with accumulator'
+        self.and_29(self.memory.read(address))
+
     @instruction(0x69, 'adc', 'imm')
     def adc_69(self, value):
         'Add memory to accumulator with carry'
         pass
-    
+
     @instruction(0x80, 'sta', 'abs')
     def sta_80(self, address):
         'Store accumulator in memory'
         pass
-        
+
     @instruction(0xA9, 'lda', 'imm')
     def lda_a9(self, value):
         'Load accumulator with memory'
