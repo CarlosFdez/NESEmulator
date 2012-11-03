@@ -1,7 +1,5 @@
 import functools
 
-import main
-
 # Represents a special purpose register used internally by the processor
 # Internally, the data is laid out as follows:
 # (high) N | V | 1 | B | D | I | Z | C (low)
@@ -189,6 +187,7 @@ class Processor(object):
         pass
 
 if __name__ == '__main__':
-    memory = main.MemoryController()
+    import memory
+    memory = memory.MemoryController()
     processor = Processor(memory)
     print(processor.instructions)
