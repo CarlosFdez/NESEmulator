@@ -20,7 +20,7 @@ import struct
 # C000 - FFFF    PRG-ROM (Program ROM)
 class MemoryController(object):
     def __init__(self, rom = None):
-        self._rom = rom
+        self.rom = rom
         self.ram = [0] * 0x800
 
     # Sets the file pointer location
@@ -31,6 +31,9 @@ class MemoryController(object):
     def rom_start(self):
         return 0x8000
 
+    def set_rom(self, rom):
+        self.rom = rom
+
     # Reads an unsigned byte from memory. The memory is obtained from the
     # pointer location/address
     def read(self, address):
@@ -40,8 +43,12 @@ class MemoryController(object):
         if address < 0x8000:
             print('WARNING: NOT SUPPORTED')
         else:
+            # Todo: Do a more efficient method than bounds checking
             rom_location = address - 0x8000
-            return self._rom.prg_rom[rom_location]
+            if rom_location < len(self.rom.prg_rom):
+                return self.rom.prg_rom[rom_location]
+            else:
+                return 0
 
     # Reads an unsigned word from memory
     # Note: The implementation is fairly dumb

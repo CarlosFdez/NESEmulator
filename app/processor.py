@@ -120,7 +120,7 @@ class Processor(object):
         # Todo: Allow the instruction to get the arguments itself
         # Todo: Chain of if statements is slow. Change this
         # Note: data read is unsigned in all modes except relative
-        arguments = []
+        arguments = [self]
         if mode == 'implied':
             # implied - no arguments
             pass
