@@ -39,3 +39,16 @@ class ProcessorCycleTest(unittest.TestCase):
     def test_immediate_addressing(self):
         "The program counter should increase by 2 in immediate addressing"
         test_counter_increase(self, 0xA9, 2) # lda
+
+class InstructionsTest(unittest.TestCase):
+    def setUp(self):
+        self.memory = app.memory.MemoryController()
+        self.processor = app.processor.Processor(self.memory)
+        self.memory.write(0x5, 56)
+
+    def test_and(self):
+        "AND should 'and' memory at a certain location with the accumulator"
+        self.processor.accumulator = 52
+        self.memory.set_rom(Rom([0x2d, 0x05, 0])) # and $0005
+        self.processor.next_instruction_cycle()
+        self.assertEqual(self.processor.accumulator, 56 & 52)

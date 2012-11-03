@@ -157,7 +157,7 @@ class Processor(object):
         instruction.execute(arguments)
 
     @instruction(0x29, 'and', 'imm')
-    def and_29(self, value):
+    def and_value(self, value):
         'And memory with accumulator'
         self.accumulator &= value
 
@@ -169,7 +169,7 @@ class Processor(object):
     @instruction(0x39, 'and', 'absy')
     def and_addr(self, address):
         'And memory with accumulator'
-        self.and_29(self.memory.read(address))
+        self.and_value(self.memory.read(address))
 
     @instruction(0x69, 'adc', 'imm')
     def adc_69(self, value):
