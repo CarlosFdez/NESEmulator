@@ -24,6 +24,7 @@ class ProcessorStatus(object):
 # A decorator to ease implementation of processor instructions
 # TODO: Allow stacking of decorators
 class instruction(object):
+    # Todo: Add an arguent for retrieving address instead of value
     def __init__(self, opcode, mnemonic, addressing='implied'):
         self.opcode = opcode
         self.mnemonic = mnemonic
@@ -81,6 +82,13 @@ class InstructionSet(object):
     def find_by_opcode(self, opcode):
         return self._opcode_hash[opcode]
 
+    def find_by_mnemonic_and_mode(self, mnemonic, mode):
+        # todo: make this more efficient
+        for instruction in self._instructions:
+            if instruction.mode == mode and instruction.mnemonic == mnemonic:
+                return instruction
+        return None
+
     def __str__(self):
         str_list = map(lambda x: str(x), self._instructions)
         return '\n'.join(str_list)
@@ -117,7 +125,7 @@ class Processor(object):
         mode = instruction.mode
 
         # Read the next bytes according to the mode
-        # Todo: Allow the instruction to get the arguments itself
+        # Todo: Allow the instruction to get an address instead of the value if it wants
         # Todo: Chain of if statements is slow. Change this
         # Note: data read is unsigned in all modes except relative
         arguments = [self]
@@ -126,50 +134,49 @@ class Processor(object):
             pass
         elif mode == 'abs':
             # absolute: cmd $aaaa
-            arguments.append(self.memory.read_word(self.program_counter))
+            addr = self.memory.read_word(self.program_counter)
+            arguments.append(self.memory.read(addr))
             self.program_counter += 2
         elif mode == 'absx':
             # absolute + X register: cmd $aaaa, X
-            addr = self.memory.read_word(self.program_counter)
-            arguments.append(addr + self.x)
+            addr = self.memory.read_word(self.program_counter) + self.x
+            arguments.append(self.memory.read(addr))
             self.program_counter += 2
         elif mode == 'absy':
             # absolute + Y register: cmd $aaaa, Y
-            addr = self.memory.read_word(self.program_counter)
-            arguments.append(addr + self.y)
+            addr = self.memory.read_word(self.program_counter) + self.y
+            arguments.append(self.memory.read(addr))
             self.program_counter += 2
         elif mode == 'zp':
             # zero page: cmd $aa
-            arguments.append(self.memory.read(self.program_counter))
+            addr = self.memory.read(self.program_counter)
+            arguments.append(self.memory.read(addr))
             self.program_counter += 1
         elif mode == 'zpx':
             # zero page + X register: cmd $aa, X
-            addr = self.memory.read(self.program_counter)
-            arguments.append(addr + self.x)
+            addr = self.memory.read(self.program_counter) + self.x
+            arguments.append(self.memory.read(addr))
             self.program_counter += 1
         elif mode == 'imm':
             # immediate: cmd #$aa
-            arguments.append(self.memory.read(self.program_counter))
+            value = self.memory.read(self.program_counter)
+            arguments.append(value)
             self.program_counter += 1
         else:
             raise Exception('Addressing mode %s not recognized' % mode)
 
         instruction.execute(arguments)
 
-    @instruction(0x29, 'and', 'imm')
-    def and_value(self, value):
-        'And memory with accumulator'
-        self.accumulator &= value
-
     # Missing some addressing modes
+    @instruction(0x29, 'and', 'imm')
     @instruction(0x25, 'and', 'zp')
     @instruction(0x2d, 'and', 'abs')
     @instruction(0x35, 'and', 'zpx')
     @instruction(0x3d, 'and', 'absx')
     @instruction(0x39, 'and', 'absy')
-    def and_addr(self, address):
+    def and_addr(self, value):
         'And memory with accumulator'
-        self.and_value(self.memory.read(address))
+        self.accumulator &= value
 
     @instruction(0x69, 'adc', 'imm')
     def adc_69(self, value):
