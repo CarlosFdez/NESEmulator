@@ -107,7 +107,7 @@ class Processor(object):
         self.instructions = InstructionSet(instructionList)
         self.memory = memory
 
-        # registers
+        # registers (everything except program counter is 8 bit)
         self.program_counter = self.memory.rom_start()
         self.x = 0
         self.y = 0
@@ -157,6 +157,11 @@ class Processor(object):
             addr = self.memory.read(self.program_counter) + self.x
             arguments.append(self.memory.read(addr))
             self.program_counter += 1
+        elif mode == 'zpy':
+            # zero page + Y register: cmd $aa, Y
+            addr = self.memory.read(self.program_counter) + self.y
+            arguments.append(self.memory.read(addr))
+            self.program_counter += 1
         elif mode == 'imm':
             # immediate: cmd #$aa
             value = self.memory.read(self.program_counter)
@@ -178,6 +183,7 @@ class Processor(object):
         'And memory with accumulator'
         self.accumulator &= value
 
+    # Missing some addressing modes
     @instruction(0x09, 'or', 'imm')
     @instruction(0x05, 'or', 'zp')
     @instruction(0x0d, 'or', 'abs')
@@ -198,10 +204,34 @@ class Processor(object):
         'Store accumulator in memory'
         pass
 
-    @instruction(0xA9, 'lda', 'imm')
-    def lda_a9(self, value):
+    # Missing some addressing modes
+    @instruction(0xa9, 'lda', 'imm')
+    @instruction(0xa5, 'lda', 'zp')
+    @instruction(0xad, 'lda', 'abs')
+    @instruction(0xb5, 'lda', 'zpx')
+    @instruction(0xb9, 'lda', 'absy')
+    @instruction(0xbd, 'lda', 'absx')
+    def lda_value(self, value):
         'Load accumulator with memory'
-        pass
+        self.accumulator = value
+
+    @instruction(0xa2, 'ldx', 'imm')
+    @instruction(0xa6, 'ldx', 'zp')
+    @instruction(0xae, 'ldx', 'abs')
+    @instruction(0xb6, 'ldx', 'zpy')
+    @instruction(0xbe, 'ldx', 'absy')
+    def ldx_value(self, value):
+        'Load index x with memory'
+        self.x = value
+
+    @instruction(0xa0, 'ldy', 'imm')
+    @instruction(0xa4, 'ldy', 'zp')
+    @instruction(0xac, 'ldy', 'abs')
+    @instruction(0xb4, 'ldy', 'zpx')
+    @instruction(0xbc, 'ldy', 'absx')
+    def ldy_value(self, value):
+        'Load index Y with memory'
+        self.y = value
 
 if __name__ == '__main__':
     import memory

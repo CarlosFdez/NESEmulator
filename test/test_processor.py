@@ -10,17 +10,22 @@ class ProcessorAddressingCycleTest(unittest.TestCase):
 
     # helper: Tests how much the program counter incremented given an opcode
     def do_counter_test(self, mode, expected):
-        instructions = self.processor.instructions
-        instruction = instructions.find_by_mnemonic_and_mode('and', mode)
-        self.assertIsNotNone(instruction)
+        @app.processor.instruction(0x00, 'test', mode)
+        def test(*args):
+            pass
 
-        opcode = instruction.opcode
+        # Replace the processors instructions with our fake instruction
+        instructions = test._instruction_info
+        self.processor.instructions = app.processor.InstructionSet(instructions)
+
         expected = self.processor.program_counter + expected
-        self.memory.set_rom(Rom([opcode]))
+        self.memory.set_rom(Rom([0x00]))
         self.processor.next_instruction_cycle()
         self.assertEqual(self.processor.program_counter, expected)
 
-    # TODO: Test implied once an implied address instruction gets implemented
+    def test_implied_addressing(self):
+        "The program counter should increase by 1 in implied addressing"
+        self.do_counter_test('implied', 1)
 
     def test_absolute_addressing(self):
         "The program counter should increase by 3 in absolute addressing"
@@ -41,6 +46,10 @@ class ProcessorAddressingCycleTest(unittest.TestCase):
     def test_zeropagex_addressing(self):
         "The program counter should increase by 2 in zeropage,X addressing"
         self.do_counter_test('zpx', 2)
+
+    def test_zeropagey_addressing(self):
+        "The program counter should increase by 2 in zeropage,Y addressing"
+        self.do_counter_test('zpy', 2)
 
     def test_immediate_addressing(self):
         "The program counter should increase by 2 in immediate addressing"
@@ -89,8 +98,12 @@ class ProcessorAddressingModeValueTest(unittest.TestCase):
         self.do_value_test('zp')
 
     def test_zeropagex(self):
-        "Zero page, X addressing should pass the value"
+        "Zero page,X addressing should pass the value"
         self.do_value_test('zpx')
+
+    def test_zeropagey(self):
+        "Zero page,Y addressing should pass the value"
+        self.do_value_test('zpy')
 
     # TODO: test immediate addressing. We can't just use do_value_test in that case
 
@@ -112,3 +125,21 @@ class InstructionsTest(unittest.TestCase):
         self.memory.set_rom(Rom([0x09, 56, 0])) # or #56
         self.processor.next_instruction_cycle()
         self.assertEqual(self.processor.accumulator, 56 | 52)
+
+    def test_lda(self):
+        "LDA should load the accumulator with a value"
+        self.memory.set_rom(Rom([0xa9, 56, 0]))
+        self.processor.next_instruction_cycle()
+        self.assertEqual(self.processor.accumulator, 56)
+
+    def test_ldx(self):
+        "LDX should load index X with a value"
+        self.memory.set_rom(Rom([0xa2, 56, 0]))
+        self.processor.next_instruction_cycle()
+        self.assertEqual(self.processor.x, 56)
+
+    def test_ldy(self):
+        "LDY should load index Y with a value"
+        self.memory.set_rom(Rom([0xa0, 56, 0]))
+        self.processor.next_instruction_cycle()
+        self.assertEqual(self.processor.y, 56)
