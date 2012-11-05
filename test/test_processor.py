@@ -2,7 +2,8 @@ import unittest
 from app.memory import MemoryController, Rom
 import app.processor
 
-class ProcessorCycleTest(unittest.TestCase):
+# Test that each addressing mode takes the correct amount of cycles
+class ProcessorAddressingCycleTest(unittest.TestCase):
     def setUp(self):
         self.memory = app.memory.MemoryController()
         self.processor = app.processor.Processor(self.memory)
@@ -97,11 +98,17 @@ class InstructionsTest(unittest.TestCase):
     def setUp(self):
         self.memory = app.memory.MemoryController()
         self.processor = app.processor.Processor(self.memory)
-        self.memory.write(0x5, 56)
 
     def test_and(self):
-        "AND should 'and' memory at a certain location with the accumulator"
+        "AND should 'and' a value with the accumulator"
         self.processor.accumulator = 52
-        self.memory.set_rom(Rom([0x2d, 0x05, 0])) # and $0005
+        self.memory.set_rom(Rom([0x29, 56, 0])) # and #56
         self.processor.next_instruction_cycle()
         self.assertEqual(self.processor.accumulator, 56 & 52)
+
+    def test_or(self):
+        "OR should 'or' a value with the accumulator"
+        self.processor.accumulator = 52
+        self.memory.set_rom(Rom([0x09, 56, 0])) # or #56
+        self.processor.next_instruction_cycle()
+        self.assertEqual(self.processor.accumulator, 56 | 52)

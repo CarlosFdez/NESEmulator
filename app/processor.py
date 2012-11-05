@@ -174,9 +174,19 @@ class Processor(object):
     @instruction(0x35, 'and', 'zpx')
     @instruction(0x3d, 'and', 'absx')
     @instruction(0x39, 'and', 'absy')
-    def and_addr(self, value):
+    def and_value(self, value):
         'And memory with accumulator'
         self.accumulator &= value
+
+    @instruction(0x09, 'or', 'imm')
+    @instruction(0x05, 'or', 'zp')
+    @instruction(0x0d, 'or', 'abs')
+    @instruction(0x15, 'or', 'zpx')
+    @instruction(0x1d, 'or', 'absx')
+    @instruction(0x19, 'or', 'absy')
+    def or_value(self, value):
+        'Or memory with accumulator'
+        self.accumulator |= value
 
     @instruction(0x69, 'adc', 'imm')
     def adc_69(self, value):
